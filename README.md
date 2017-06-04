@@ -35,14 +35,14 @@ Check for expired snapshots and automatically delete them
 # Example crontab
 ```
 #Generate a new snapshot every hour thats valid for 12 hours
-0 */2 * * * sudo ruby zfs_snapshot.rb -c -d tank/jails/services/jira -t 12h >/dev/null 2>&1 
+0 */2 * * * root ruby zfs_snapshot.rb -c -d tank/jails/services/jira -t 12h -n hourly >/dev/null 2>&1 
 
 #Generate a new snapshot every day at midnight that's valid for 30 days
-0 0 * * * sudo ruby zfs_snapshot.rb -c -d tank/jails/services/jira -t 30d >/dev/null 2>&1
+0 0 * * * root ruby zfs_snapshot.rb -c -d tank/jails/services/jira -t 30d -n daily >/dev/null 2>&1
 
 #Generate a new snapshot at the beginning of a month at midnight that's valid for 3 months
-0 0 1 * * sudo ruby zfs_snapshot.rb -c -d tank/jails/services/jira -t 3m >/dev/null 2>&1
+0 0 1 * * root ruby zfs_snapshot.rb -c -d tank/jails/services/jira -t 3m -n monthly >/dev/null 2>&1
 
 #Look for outdated snapshots every day at midnight and automatically delete them
-0 0 * * * sudo ruby zfs_snapshot.rb -d tank/jails/services/jira -p >/dev/null 2>&1
+0 0 * * * root ruby zfs_snapshot.rb -d tank/jails/services/jira -p >/dev/null 2>&1
 ```
