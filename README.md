@@ -1,10 +1,10 @@
 # zfs_snapshot
 Ruby script for creating periodic ZFS snapshots (incl. cleanup feature)
 
-#Dependencies: 
+# Dependencies: 
 - time_difference gem
 
-#Usage: 
+# Usage: 
 Recommended to be used in combination with cron jobs to automate the cleanup / creation of snapshots. 
 Needs root privileges for creating / destroying snapshots.
 
@@ -21,7 +21,7 @@ Usage: zfs_snapshot [options]
     -p, --purge                      Deletes expired ZFS Snapshots
 ```
 
-#Examples: 
+# Examples: 
 
 Create new snapshot of tank-dataset that's valid for 30 days
 ``zfs_snapshot -c -d tank -t 30d``
@@ -32,7 +32,7 @@ Create new snapshot of tank-dataset that's valid for 30 weeks
 Check for expired snapshots and automatically delete them
 ``zfs_snapshot -d tank -p`
 
-#Example crontab
+# Example crontab
 ```
 #Generate a new snapshot every hour thats valid for 12 hours
 0 */2 * * * sudo ruby zfs_snapshot.rb -c -d tank/jails/services/jira -t 12h >/dev/null 2>&1 
