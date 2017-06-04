@@ -30,7 +30,7 @@ Create new snapshot of tank-dataset that's valid for 30 weeks
 ``zfs_snapshot -c -d tank -t 30w``
 
 Check for expired snapshots and automatically delete them
-``zfs_snapshot -d tank -p`
+``zfs_snapshot -d tank -p``
 
 # Example crontab
 ```
