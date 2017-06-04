@@ -105,6 +105,7 @@ def snapshot_age(snapshot_name)
     exp = exp_match[2]
     exp_unit = exp_match[3]
     created_at = DateTime.strptime(created_at_match[0], '%Y%m%d-%H%M')
+    created_at = created_at.change(:offset => Time.now.strftime("%:z"))
 
     if exp && exp_unit && created_at
       age_unit_selector_mapping = {h: 'in_hours', d: 'in_days', m: 'in_months', y: 'in_years'}
