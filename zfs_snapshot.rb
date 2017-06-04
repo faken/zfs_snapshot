@@ -46,6 +46,7 @@ end.parse!
 def create_zfs_snapshot(dataset, ttl, snapshot_name, safe_mode=false, recursive=false, verbose=false)
   date = Time.now.utc.strftime('%Y%m%d-%H%M')
   command = "zfs snapshot #{recursive ? '-r' : nil} #{dataset}@#{snapshot_name}_#{date}_exp_#{ttl}"
+  puts "Creating snapshot: #{dataset}@#{snapshot_name}_#{date}_exp_#{ttl}"
   execute_system_command(command,safe_mode, verbose)
 end
 
@@ -53,13 +54,16 @@ def destroy_outdated_snapshots(dataset, recursive=false, safe_mode=false, verbos
   puts 'Looking for outdated snapshots...'
 
   output = get_snapshots(dataset, verbose)
-  output.split(/\r?\n|\r/).each do |line|
-    snapshot_age = snapshot_age(line)
 
-    if snapshot_age[0] > snapshot_age[1]
-      puts "Destroying snapshot: #{line}"
-      command = "zfs destroy #{recursive ? '-r' : nil} #{line}"
-      execute_system_command(command, safe_mode)
+  if output
+    output.split(/\r?\n|\r/).each do |line|
+      snapshot_age = snapshot_age(line)
+
+      if snapshot_age[0] > snapshot_age[1]
+        puts "Destroying snapshot: #{line}"
+        command = "zfs destroy #{recursive ? '-r' : nil} #{line}"
+        execute_system_command(command, safe_mode)
+      end
     end
   end
 end
