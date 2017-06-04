@@ -48,7 +48,7 @@ OptionParser.new do |parser|
 end.parse!
 
 def create_zfs_snapshot(dataset, ttl, snapshot_name, safe_mode=false, recursive=false, verbose=false)
-  date = Time.now.utc.strftime('%Y%m%d-%H%M')
+  date = Time.now.strftime('%Y%m%d-%H%M')
   command = "zfs snapshot #{recursive ? '-r' : nil} #{dataset}@#{snapshot_name}_#{date}_exp_#{ttl}"
   puts "Creating snapshot: #{dataset}@#{snapshot_name}_#{date}_exp_#{ttl}"
   execute_system_command(command,safe_mode, verbose)
@@ -111,7 +111,7 @@ def snapshot_age(snapshot_name)
       age_unit_selector = age_unit_selector_mapping[exp_unit.downcase.intern]
 
       if age_unit_selector
-        return [TimeDifference.between(DateTime.now.utc , created_at.utc).send(age_unit_selector), exp.to_f, exp_unit]
+        return [TimeDifference.between(DateTime.now , created_at).send(age_unit_selector), exp.to_f, exp_unit]
       end
     end
   end
