@@ -30,7 +30,7 @@ Create new snapshot of tank-dataset that's valid for 30 weeks
 ``zfs_snapshot -c -d tank -t 30w``
 
 Check for expired snapshots and automatically delete them
-``zfs_snapshot -d tank -p`
+``zfs_snapshot -d tank -p``
 
 # Example crontab
 ```
@@ -45,4 +45,4 @@ Check for expired snapshots and automatically delete them
 
 #Look for outdated snapshots every day at midnight and automatically delete them
 0 0 * * * sudo ruby zfs_snapshot.rb -d tank/jails/services/jira -p >/dev/null 2>&1
-```
+``
