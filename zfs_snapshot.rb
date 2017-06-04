@@ -38,7 +38,11 @@ OptionParser.new do |parser|
     options[:safe_mode] = true
   end
 
-  parser.on('-c', '--clean', 'Deletes expired ZFS Snapshots') do
+  parser.on('-c', '--create', 'Create ZFS Snapshot') do
+    options[:create] = true
+  end
+
+  parser.on('-p', '--purge', 'Deletes expired ZFS Snapshots') do
     options[:clean] = true
   end
 end.parse!
@@ -130,21 +134,28 @@ def execute_system_command(cmd, safe_mode=false, verbose=false)
   end
 end
 
-raise OptionParser::MissingArgument if options[:dataset].nil?
 
 if options[:stats]
+  raise OptionParser::MissingArgument if options[:dataset].nil?
+  
   show_statistics(options[:dataset], options[:verbose])
   abort
 end
 
-raise OptionParser::MissingArgument if options[:snapshot_name].nil?
-raise OptionParser::MissingArgument if options[:ttl].nil?
+if options[:create]
+  raise OptionParser::MissingArgument if options[:dataset].nil?
+  raise OptionParser::MissingArgument if options[:snapshot_name].nil?
+  raise OptionParser::MissingArgument if options[:ttl].nil?
 
-create_zfs_snapshot(options[:dataset], options[:ttl],
+  create_zfs_snapshot(options[:dataset], options[:ttl],
                     options[:snapshot_name], options[:safe_mode],
                     options[:recursive],options[:verbose])
+end
+
 
 if options[:clean]
+  raise OptionParser::MissingArgument if options[:dataset].nil?
+
   destroy_outdated_snapshots(options[:dataset],
                              options[:recursive],
                              options[:safe_mode],
