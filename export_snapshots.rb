@@ -138,11 +138,12 @@ remote_snapshots = get_remote_snapshots(options[:ftp_host], options[:ftp_usernam
                                         options[:ftp_password], options[:ftp_dest_folder],
                                         options[:verbose])
 
-files_missing_on_remote = local_snapshots - remote_snapshots.map { |filename| File.basename(filename, File.extname(filename)) }
+files_missing_on_remote = local_snapshots.map { |filename| filename.gsub('/', '-')} - remote_snapshots.map { |filename| File.basename(filename, File.extname(filename)) }
 
 files_missing_on_remote.each {|snapshot_name|
-  export_filename = "/tmp/#{snapshot_name}.gzip"
+  export_filename = "/tmp/#{snapshot_name.gsub('/', '-')}.gzip"
   export_snapshot(snapshot_name, export_filename, options[:safe_mode], options[:verbose])
+  puts "Uploading #{snapshot_name}"
   upload_file(options[:ftp_host], options[:ftp_username],
               options[:ftp_password], export_filename,
               options[:ftp_dest_folder], options[:safe_mode],
