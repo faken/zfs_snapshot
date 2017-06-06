@@ -7,7 +7,7 @@ options = {}
 
 OptionParser.new do |parser|
   options[:dataset] = nil
-  parser.on( '-d', '--dataset DATASET', 'ZFS Dataset to work on' ) do|dataset|
+  parser.on( '-d', '--dataset DATASET', 'ZFS Dataset to work on' ) do |dataset|
     options[:dataset] = dataset
   end
 

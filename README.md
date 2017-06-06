@@ -2,7 +2,7 @@
 Ruby script for creating periodic ZFS snapshots (incl. cleanup feature)
 
 # Dependencies: 
-- time_difference gem
+- time_difference-gem
 
 # Usage: 
 Recommended to be used in combination with cron jobs to automate the cleanup / creation of snapshots. 
@@ -46,3 +46,27 @@ Check for expired snapshots and automatically delete them
 #Look for outdated snapshots every day at midnight and automatically delete them
 0 0 * * * root ruby zfs_snapshot.rb -d tank/jails/services/jira -p >/dev/null 2>&1
 ```
+
+# export snapshot
+
+# Dependencies
+- time_difference-gem
+
+# Usage: 
+Recommended to be used in combination with cron jobs to automate the replication / cleanup of snapshots to a remote ftp location. 
+
+```
+Usage: export_snapshots.rb [options]
+	-d, --dataset DATASET 			 ZFS Dataset to work on
+    -v, --verbose                    Output more information
+    -s, --safe 						 Safe mode, dont execute actual command
+    -u, --username USERNAME			 Remote FTP Username
+    -p, --password PASSWORD 		 Remote FTP Password
+    -h, --host HOST 				 Remote FTP Host
+    -f, --folder FOLDER 			 Remote FTP destination folder
+```
+
+# Examples
+
+Upload all snapshots and delete expired ones
+``ruby export_snapshot.rb upload -h ftphost.de -u username -p password -f /Appenetic/FreeBSD/services/jira/zfs/ -d tank``
