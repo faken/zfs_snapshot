@@ -7,18 +7,29 @@ require 'net/ftp'
 options = {}
 
 OptionParser.new do |parser|
-  options[:dataset] = nil
-  parser.on( '-d', '--dataset DATASET', 'ZFS Dataset to work on' ) do |dataset|
-    options[:dataset] = dataset
+  options[:database] = nil
+  parser.on( '--database DATABASE', 'MySQL Database' ) do |database|
+    options[:database] = database
+  end
+
+  options[:database_username] = nil
+  parser.on( '--database_username USERNAME', 'MySQL Database Username' ) do |username|
+    options[:database_username] = username
+  end
+
+  options[:database_password] = nil
+  parser.on( '--database_password PASSWORD', 'MySQL Database Password' ) do |password|
+    options[:database_password] = password
+  end
+
+  options[:database_host] = nil
+  parser.on( '--database_host HOST', 'MySQL Database Host' ) do |host|
+    options[:database_host] = host
   end
 
   options[:verbose] = false
   parser.on( '-v', '--verbose', 'Output more information' ) do
     options[:verbose] = true
-  end
-
-  parser.on('-s', '--safe', 'Safe mode, dont execute actual command') do
-    options[:safe_mode] = true
   end
 
   options[:ftp_username] = nil
@@ -40,11 +51,16 @@ OptionParser.new do |parser|
   parser.on('-f', '--folder FOLDER', 'Remote FTP destination folder') do |folder|
     options[:ftp_dest_folder] = folder
   end
+
+  options[:ttl] = nil
+  parser.on( '-t', '--ttl TIME IN DAYS', 'Amount of DAYS the created backup should be kept') do |ttl|
+    options[:ttl] = ttl
+  end
 end.parse!
 
-def export_snapshot(snapshot_name, dest_filename, safe_mode, verbose)
-  command = "zfs send #{snapshot_name} | gzip > #{dest_filename}"
-  execute_system_command(command, safe_mode, verbose)
+def create_mysql_backup(database, username, password, host, filename, safe, verbose)
+  command = "mysqldump --user=#{username} --password=#{password} --host=#{host} #{database} > #{filename}"
+  execute_system_command(command, safe, verbose)
 end
 
 def snapshot_age(snapshot_name)
@@ -64,21 +80,6 @@ def snapshot_age(snapshot_name)
         return [TimeDifference.between(DateTime.now.utc , created_at.utc).send(age_unit_selector), exp.to_f, exp_unit]
       end
     end
-  end
-end
-
-def get_local_snapshots(dataset, verbose)
-  execute_system_command("zfs list -H -o name -t snapshot | sort | grep #{dataset}", false, verbose).split("\n")
-end
-
-def get_remote_snapshots(hostname, username, password, folder, verbose)
-  if verbose
-    "getting file list from ftp: #{username}:#{password}@#{hostname}:/#{folder}"
-  end
-
-  Net::FTP.open(hostname, username, password) do |ftp|
-    ftp.chdir(folder)
-    ftp.list.map { |entry| entry.split.last }
   end
 end
 
@@ -109,6 +110,17 @@ def delete_remote_file(hostname, username, password, filename, destination_folde
   end
 end
 
+def get_remote_backups(hostname, username, password, folder, verbose)
+  if verbose
+    "getting file list from ftp: #{username}:#{password}@#{hostname}:/#{folder}"
+  end
+
+  Net::FTP.open(hostname, username, password) do |ftp|
+    ftp.chdir(folder)
+    ftp.list.map { |entry| entry.split.last }
+  end
+end
+
 def execute_system_command(cmd, safe_mode=false, verbose=false)
   if safe_mode || verbose
     puts "Executing command: #{cmd}"
@@ -126,38 +138,43 @@ def execute_system_command(cmd, safe_mode=false, verbose=false)
   end
 end
 
-raise OptionParser::MissingArgument if options[:dataset].nil?
+raise OptionParser::MissingArgument if options[:database].nil?
 raise OptionParser::MissingArgument if options[:ftp_host].nil?
 raise OptionParser::MissingArgument if options[:ftp_username].nil?
 raise OptionParser::MissingArgument if options[:ftp_password].nil?
 raise OptionParser::MissingArgument if options[:ftp_dest_folder].nil?
+raise OptionParser::MissingArgument if options[:database].nil?
+raise OptionParser::MissingArgument if options[:database_username].nil?
+raise OptionParser::MissingArgument if options[:database_host].nil?
+raise OptionParser::MissingArgument if options[:ttl].nil?
 
-local_snapshots = get_local_snapshots(options[:dataset], options[:verbose])
-remote_snapshots = get_remote_snapshots(options[:ftp_host], options[:ftp_username],
-                                        options[:ftp_password], options[:ftp_dest_folder],
-                                        options[:verbose])
 
-files_missing_on_remote = local_snapshots.map { |filename| filename.gsub('/', '-')} - remote_snapshots.map { |filename| File.basename(filename, File.extname(filename)) }
+date = Time.now.strftime('%Y%m%d-%H%M')
+backup_name_filename = "/tmp/#{options[:database]}_#{date}_exp_#{options[:ttl]}.sql"
+create_mysql_backup(options[:database], options[:database_username],
+                    options[:database_password], options[:database_host],
+                    backup_name_filename, false, options[:verbose])
 
-files_missing_on_remote.each {|snapshot_name|
-  export_filename = "/tmp/#{snapshot_name.gsub('/', '-')}.gzip"
-  export_snapshot(snapshot_name, export_filename, options[:safe_mode], options[:verbose])
-  puts "Uploading #{snapshot_name}"
-  upload_file(options[:ftp_host], options[:ftp_username],
-              options[:ftp_password], export_filename,
-              options[:ftp_dest_folder], options[:safe_mode],
-              options[:verbose])
+upload_file(options[:ftp_host], options[:ftp_username],
+            options[:ftp_password], backup_name_filename,
+            options[:ftp_dest_folder], false,
+            options[:verbose])
 
-  File.delete(export_filename)
-}
+remote_backups = get_remote_backups(options[:ftp_host], options[:ftp_username],
+                                    options[:ftp_password], options[:ftp_dest_folder],
+                                    options[:verbose])
 
-remote_snapshots.each { |remote_file|
+remote_backups.each { |remote_file|
   snapshot_age = snapshot_age(remote_file)
-  if snapshot_age[0] > snapshot_age[1]
-    puts "Deleting remote snapshot: #{remote_file}"
+
+    if snapshot_age != nil && snapshot_age[0] > snapshot_age[1]
+    puts "Deleting remote backup: #{remote_file}"
     delete_remote_file(options[:ftp_host], options[:ftp_username],
                        options[:ftp_password], remote_file,
                        options[:ftp_dest_folder], options[:safe_mode],
                        options[:verbose])
   end
 }
+
+
+
